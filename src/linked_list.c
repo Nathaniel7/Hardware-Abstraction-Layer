@@ -68,7 +68,7 @@ int getQueuedata(listNode* N,int data_opt)
 		if (N->q_front == N->q_rear)
 			return 0;
 	}
-	else
+	else// PREVDATA
 	{
 		if (N->q_pfront == N->q_prear)
 			return 0;

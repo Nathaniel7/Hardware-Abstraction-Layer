@@ -101,6 +101,7 @@ void* thread_F_makeDevthread(void* data)
     while(1)
     {
     	tmpNode  = getDevHead();
+    	if(tmpNode != NULL)
     	p = tmpNode->head;
 
     	if(p == NULL)
@@ -134,14 +135,15 @@ void* thread_S_pressData(void* data)
 {
 	//linkedlist 만들기
 	listNode_h* Node;
-	listNode* p;
+	listNode* p=NULL;
 	int qData;//new
 	int i=0;
 
 	while(1)
 	{
 		Node = getDevHead();
-		p = Node->head;
+		if(Node != NULL)
+			p = Node->head;
 
 		while(p != NULL)
 		{

@@ -213,15 +213,14 @@ void F_analyzeData(listNode* p, unsigned char* readBuff, int count)//queuing
 		{
 				////////////Filter Analyzed data//////////////
 				for(i=0;i<p->dev_datalen/2;i++)
-				if (F_filterHanbackDust(p, i)) //filter error data
+				if(data[i] = F_filterHanbackSensor(p,i,data[i]))
 				{
 					//rintf("\ndata! -> %d read_cnt:%d total:%d \n",data[i],p->read_cnt,p->total_analyzeData[0]);
 
-					if(data[i] <= 0)//처음데이터를 60으로시작
-						data[i] = 60;
+					if(data[i] <= 0) data[i] = 0;//처음데이터를 60으로시작
+					else if(data[i] > 3000) data[i]=3000;
 
-					p->total_analyzeData[0] += data[i];//=data[i]
-					analyzedData[i] = p->total_analyzeData[0]/p->read_cnt; //우선 분석된데이터 중 1개라도
+					analyzedData[i] = data[i];
 					//에러데이터가 있는지 검사하기위해 analyzedData에 저장합니다.
 				}
 				else
@@ -251,29 +250,11 @@ void F_analyzeData(listNode* p, unsigned char* readBuff, int count)//queuing
 			}
 		/////////////////////////////////////////////
 		}
-        else if(p->dev_id[0] == HANBACK_OZONE_FRONT &&////////////////////////////////////////ozonealgo
-                p->dev_id[1] == HANBACK_OZONE_REAR)
-        {
-
-				////////////Filter Analyzed data//////////////
-        		for(i=0;i<p->dev_datalen/2;i++)
-				if (F_filterHanbackOzone(p, i)) //filter error data
-				{
-					analyzedData[i] = data[i]; //우선 분석된데이터 중 1개라도
-					//에러데이터가 있는지 검사하기위해 analyzedData에 저장합니다.
-				} else
-				{
-					//DCURRENT
-					analyzedData[i] = -1;
-				}
-				/////////////////////////////////////////////
-        }
-
-    }
     /////////////3.분석된 큐에 데이터를 집어 넣음//////////////
     //////////save Queue Analyzed data//////////
     for (i = 0; i < p->dev_datalen / 2; i++)
        setQueuedata(p, analyzedData[i], CURRDATA);
+    }//end if if( 0 == strcmp(p->dev_maker,"HANBACK"))
 }
 
 int F_filterHanbackSensor(listNode* p,int index,int data)//data return
@@ -282,12 +263,12 @@ int F_filterHanbackSensor(listNode* p,int index,int data)//data return
 	int SMA=0;//이동평균을 구하는 값입니다. 사용할 데이터의 갯수는 10으로 한다.
 	int ESMA_cnt = 10;
 	int totalQueueData[MAX_SENSOR_DATANUM]={0};//analyzed data가 여러개일경우를 대비
+	float dustTotalQueueData;
 
-	int data_cnt = p->read_cnt; //데이터를 받은 횟수입니다 정확도를 위하여 -2를 합니다 (처음 리드시 0이 나오므로)
+	int data_cnt = p->read_cnt-1; //데이터를 받은 횟수입니다 정확도를 위하여 -2를 합니다 (처음 리드시 0이 나오므로)
 	int i=0;
 	int front = p->q_front-1;//현재 Queue의 front가 가리키는 위치는 빈 공간이기 때문에
 
-	if(p->dev_filter_opt == FILTER_OPT_FILTER)
 	if( 0 == strcmp(p->dev_name,"Dioxide") ||
 		0 == strcmp(p->dev_name,"VOC")		)//지수이동평균 그리고 모두 분석대상 데이터는 1개
 	{
@@ -320,9 +301,53 @@ int F_filterHanbackSensor(listNode* p,int index,int data)//data return
 				return data;
 		}
 	}
-	else if( 0 == strcmp(p->dev_name,"Dust") )//이동평균
+	else if( 0 == strcmp(p->dev_name,"Dust") )//가중 이동평균을 구한다.
 	{
+		float dustTotalQueueData=0;
 
+		if(data < 0) data = 0;
+		else if(data > 3000) data = 3000;//dust에러값처리
+
+
+		if(data_cnt>0)
+		{
+			if( data_cnt < 10)//10으로 설정
+			{
+				ESMA_cnt = data_cnt;
+				for (i = 0; i < ESMA_cnt - 1; i++)
+				{
+					totalQueueData[0] += p->q_rdata[front];
+					front--;
+				}
+
+				totalQueueData[0] += data;
+				SMA = totalQueueData[0]/data_cnt; //
+
+				printf("\n###data_cnt : %d recv_Data : %d   SMA : %d\n", data_cnt, data, SMA);
+
+				return SMA;
+			}
+			else
+			{
+				ESMA_cnt = 10;
+				for (i=ESMA_cnt-2;i>=1;i--)//8개를 더해줌
+				{
+					float value_rate = i*0.02;
+					dustTotalQueueData += p->q_rdata[front]*value_rate;
+					//printf("\n###plus data:%f\n",p->q_rdata[front]*value_rate);
+					front--;
+				}
+
+				dustTotalQueueData += data*0.18;
+				printf("\n##data_cnt : %d recv_Data : %d  가중평균: %d\n", data_cnt, data,(int)dustTotalQueueData);
+
+				return (int)dustTotalQueueData;
+			}
+
+			return SMA;
+		}
+		else
+			return data;
 	}
 
 	return 0;
