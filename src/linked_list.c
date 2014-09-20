@@ -126,9 +126,9 @@ void initNode(listNode* newNode,char* dev_path)
 	newNode->q_pfront= 0;
 	newNode->q_prear = 0;
 
-
-	//newNode->getErrordata=0;
 	newNode->dev_filter_opt=-1;
+
+	newNode->dev_monitor_status = 0;
 
 	///DCURFILE///
 	for(i=0;i<MAX_BUFF_SIZE;i++)

@@ -1,28 +1,12 @@
 #include "main.h"
-//int main()
-//{
-//    while(1)
-//    {
-//        int fd = user_uart_open("/dev/ttyUSB0");
-//        printf("fd:%d\n",fd);
-//
-//        sleep(1);
-//    }
-// return 0;
-//}
+
+
 int main()
 {
     pthread_t p_thread[10];
     int thr_id;
     int status;
-    int i,e;
-    ////////////////
-    monitorDev_ok=0;//thread에서 M_deviceConnect와 F_filterData thread의 동기화를 위한 변수
-    newDevice_cnt=0;//새로운 장치 연결 개수를 잼 thread_F_makeDevthread 의 curDevice_cnt와 비교했을때 숫자가 같으면 새로운 장치가 연결 된것임
-    				//curDevice_cnt는 1부터 시작함.
-    deviceIndex=0;//현재 장치 개수를 셈
-    ////////////////
-    Node = createListNode_H();//장치의 링크드리스트를 만들기위해 헤드를 만듦
+    //Node = createListNode_H();//장치의 링크드리스트를 만들기위해 헤드를 만듦
 
     listNode* p;
     printCutLine();     // ---------------------------------
@@ -62,46 +46,15 @@ listNode_h* getDevHead()
 	return Node;
 }
 
-void device_close(listNode_h *N)
-{
-    listNode *p = N->head;
-    int tmp_filter_opt=0;
-
-    while(p != NULL) {
-        user_uart_close(p->fd);//close
-        p = p->next;
-    }
-
-    p = N->tail;
-//    while(p != NULL) {
-//    int tmp_filter_opt=0;
-	printf("Input Accuracy Option <<%s>> \n 1.Nonfiltering 2.Filtering  >> ",p->dev_name);
-	scanf("%d", &tmp_filter_opt);
-	p->dev_filter_opt = tmp_filter_opt + 5;//#define filtering option은 3부터 되어있음.
-//
-//        p = p->next;
-//    }
-}
-
-void device_reopen(listNode_h *N)
-{
-    listNode *p = N->head;
-
-    while(p != NULL) {
-        p->fd = user_uart_open(p->dev_path);
-        if(p->fd != -1) {
-            user_uart_config(p->fd, 57600, 8, 0, 1);
-//          printf(">> Open Device: %s, FD: %d\n", p->dev_path, p->fd);
-        }
-        else
-            printf(">> Open Device Fail!!!!!\n");
-
-        p = p->next;
-    }
-}
-
 void* thread_M_connectDevice(void* data) {
-	listNode_h* Node = (listNode_h*) data;
+
+	Node = createListNode_H();//장치의 링크드리스트를 만들기위해 헤드를 만듦
+
+	////////////////
+	newDevice_cnt = 0; //새로운 장치 연결 개수를 잼 thread_F_makeDevthread 의 curDevice_cnt와 비교했을때 숫자가 같으면 새로운 장치가 연결 된것임
+					   //curDevice_cnt는 1부터 시작함.
+	deviceIndex = 0; //현재 장치 개수를 셈
+	////////////////
 
 	while (1) {
 		if (M_connectDevice(Node)) {
@@ -109,13 +62,7 @@ void* thread_M_connectDevice(void* data) {
 			printf("M-connect!()\n");
 			printCutLine();
 
-			monitorDev_ok = 0;//F_readData();함수 실행 여부를 결정한다.
-			device_close(Node);//
-			device_reopen(Node);
-			monitorDev_ok = 1;
-
 			setDevHead(Node);
-
 			newDevice_cnt++;
 		}
 		sleep(3);
@@ -128,11 +75,9 @@ void* thread_F_readData(void* data) {
 	printf("****StartReadData(F_readData2()) << dev : %s >> \n",p->dev_name);
 	while (1)
 	{
-		while (monitorDev_ok)
+		while (p->dev_monitor_status)
 		{
 			F_readData(p); //모든 LinkedList Node의 데이터를 다 받는다.
-
-
 //			if (0 == strcmp(p->dev_name, "Thermometer"))//D_getQueuedata함수가 있습니다.D_getQueuedata사용시 데이터가사리지므로 주의해야함.
 //				D_HBACK_Thermometer(p);
 //			else if (0 == strcmp(p->dev_name, "Weather"))

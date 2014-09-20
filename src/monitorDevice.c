@@ -28,10 +28,13 @@ int M_connectDevice(listNode_h *N)
 			        // just display device node info
 			        M_printDeviceInfo(*N->tail);
 			       user_uart_close(N->tail->fd);
+
+			       N->tail->dev_monitor_status = 1;
 			        return 1;
 			    }
 			    else
 			    {
+			    	N->tail->dev_monitor_status = 0;
 			        return 0;
 			    }
 			}
