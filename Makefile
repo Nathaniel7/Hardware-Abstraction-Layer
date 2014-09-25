@@ -1,6 +1,6 @@
 DEL=rm
-CC=gcc
-#CC=/work/compiler/gcc-linaro-arm-linux-gnueabihf-4.7-2013.04-20130415_linux/bin/arm-linux-gnueabihf-gcc
+#CC=gcc
+CC=/work/compiler/gcc-linaro-arm-linux-gnueabihf-4.7-2013.04-20130415_linux/bin/arm-linux-gnueabihf-gcc
 #CC=/opt/gcc-linaro-arm-linux-gnueabihf-4.7-2013.04-20130415_linux/bin/arm-linux-gnueabihf-gcc
 
 CFLAGS+=-static
